@@ -1,0 +1,58 @@
+# project.yml
+# ─────────────────────────────────────────────────────────────────────────────
+# Manifeste DigitalOcean Functions — E-Commerce API Serverless
+#
+# Ce fichier déclare les 9 fonctions du projet, leur runtime Python,
+# et les variables d'environnement partagées.
+#
+# Déployer :  doctl serverless deploy . --remote-build
+# ─────────────────────────────────────────────────────────────────────────────
+
+packages:
+  - name: api
+    # ── Variables d'environnement ─────────────────────────────────────────
+    # ${MONGODB_URL} est lu depuis le fichier .env au moment du déploiement.
+    # En production, configurer directement dans le dashboard DO.
+    environment:
+      MONGODB_URL: "${MONGODB_URL}"
+
+    # ── Fonctions (actions) ───────────────────────────────────────────────
+    actions:
+      # Page d'accueil — info sur l'API
+      - name: root
+        runtime: python:default
+        web: true
+
+      # CRUD — Produits
+      - name: products-list
+        runtime: python:default
+        web: true
+
+      - name: products-search
+        runtime: python:default
+        web: true
+
+      - name: products-categories
+        runtime: python:default
+        web: true
+
+      - name: products-get
+        runtime: python:default
+        web: true
+
+      - name: products-create
+        runtime: python:default
+        web: true
+
+      - name: products-update
+        runtime: python:default
+        web: true
+
+      - name: products-delete
+        runtime: python:default
+        web: true
+
+      # Webhook — Atlas Triggers (architecture événementielle)
+      - name: webhook-stock-alert
+        runtime: python:default
+        web: true
