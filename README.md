@@ -34,28 +34,36 @@ ecommerce-api-serverless/
         │   └── __main__.py
         ├── products-list/               → GET (lister / filtrer)
         │   ├── __main__.py
-        │   └── requirements.txt
+        │   ├── requirements.txt
+        │   └── build.sh                 ← Script d'installation des dépendances
         ├── products-search/             → GET (recherche texte)
         │   ├── __main__.py
-        │   └── requirements.txt
+        │   ├── requirements.txt
+        │   └── build.sh
         ├── products-categories/         → GET (catégories distinctes)
         │   ├── __main__.py
-        │   └── requirements.txt
+        │   ├── requirements.txt
+        │   └── build.sh
         ├── products-get/                → GET (par ID)
         │   ├── __main__.py
-        │   └── requirements.txt
+        │   ├── requirements.txt
+        │   └── build.sh
         ├── products-create/             → POST (créer)
         │   ├── __main__.py
-        │   └── requirements.txt
+        │   ├── requirements.txt
+        │   └── build.sh
         ├── products-update/             → PUT (modifier)
         │   ├── __main__.py
-        │   └── requirements.txt
+        │   ├── requirements.txt
+        │   └── build.sh
         ├── products-delete/             → DELETE (supprimer)
         │   ├── __main__.py
-        │   └── requirements.txt
+        │   ├── requirements.txt
+        │   └── build.sh
         └── webhook-stock-alert/         → POST (webhook Atlas)
             ├── __main__.py
-            └── requirements.txt
+            ├── requirements.txt
+            └── build.sh
 ```
 
 ---
@@ -360,7 +368,8 @@ packages/
   └── <nom-du-package>/
       └── <nom-de-la-fonction>/
           ├── __main__.py      ← Point d'entrée (obligatoire)
-          └── requirements.txt ← Dépendances Python (optionnel)
+          ├── requirements.txt ← Dépendances Python (optionnel)
+          └── build.sh         ← Script d'installation des dépendances (obligatoire si requirements.txt)
 ```
 
 | Dossier | URL de la fonction |
@@ -453,12 +462,38 @@ Chaque fonction a son propre `requirements.txt`. Pour les fonctions qui accèden
 ```bash
 # Créer les requirements pour chaque fonction qui utilise MongoDB
 for dir in products-list products-search products-categories products-get products-create products-update products-delete webhook-stock-alert; do
-  echo -e "pymongo==4.7.3\npython-dotenv==1.0.1" > packages/api/$dir/requirements.txt
+  printf "pymongo==4.7.3\ndnspython>=2.1.0\npython-dotenv==1.0.1\n" > packages/api/$dir/requirements.txt
 done
 
 # La fonction root n'a pas besoin de pymongo
 echo "python-dotenv==1.0.1" > packages/api/root/requirements.txt
 ```
+
+> ⚠️ **Pourquoi `dnspython` ?** Les URIs `mongodb+srv://` (utilisées par Atlas) nécessitent le module `dnspython` pour résoudre les enregistrements SRV DNS. Sans lui, pymongo ne peut pas se connecter à Atlas.
+
+---
+
+## 3.5 — Fichier `build.sh` (par fonction)
+
+> ⚠️ **Important :** DigitalOcean Functions **n'installe PAS automatiquement** les dépendances depuis `requirements.txt`. Vous devez créer un script `build.sh` dans chaque dossier de fonction.
+
+```bash
+# Créer le build.sh pour chaque fonction qui a des dépendances
+for dir in products-list products-search products-categories products-get products-create products-update products-delete webhook-stock-alert; do
+  cat > packages/api/$dir/build.sh << 'SCRIPT'
+#!/bin/bash
+set -e
+virtualenv --without-pip virtualenv
+pip install -r requirements.txt --target virtualenv/lib/python3.9/site-packages
+SCRIPT
+  chmod +x packages/api/$dir/build.sh
+done
+```
+
+> 🔑 **Explications :**
+> - **`virtualenv`** : Crée un environnement virtuel. Le dossier **doit** s'appeler `virtualenv` — c'est une convention imposée par DO Functions.
+> - **`pip install --target`** : Installe les packages dans le dossier `virtualenv/` qui sera inclus dans le déploiement.
+> - **`--remote-build`** : Lors du déploiement, on utilisera `doctl serverless deploy . --remote-build` pour que ce script s'exécute sur les serveurs de DigitalOcean (qui ont `virtualenv` préinstallé).
 
 > ⚠️ **Remarquez les différences avec le TP1 :**
 >
@@ -469,16 +504,18 @@ echo "python-dotenv==1.0.1" > packages/api/root/requirements.txt
 > | `gunicorn` | ❌ Absent | Pas de process manager nécessaire |
 > | `pydantic` | ❌ Absent | On valide manuellement (code plus simple) |
 > | `motor` (async) | `pymongo` (sync) | Les fonctions serverless sont éphémères — un driver synchrone est plus adapté |
+> | `pip install -r` (direct) | `build.sh` + `virtualenv` | DO Functions n'installe pas les dépendances automatiquement |
 
 ---
 
-## 3.5 — Fichier `.gitignore`
+## 3.6 — Fichier `.gitignore`
 
 ```gitignore
 __pycache__/
 *.py[cod]
 venv/
 .venv/
+virtualenv/
 .env
 .env.local
 .deployed/
@@ -487,7 +524,7 @@ venv/
 
 ---
 
-## 3.6 — Fichier `.env` (local uniquement)
+## 3.7 — Fichier `.env` (local uniquement)
 
 Ce fichier contient votre chaîne de connexion MongoDB Atlas — **la même** que dans le TP1 :
 
@@ -499,7 +536,7 @@ MONGODB_URL=mongodb+srv://api_user:VOTRE_MOT_DE_PASSE@ecommerce-workshop.xxxxx.m
 
 ---
 
-## 3.7 — Vérification
+## 3.8 — Vérification
 
 Votre dossier devrait maintenant ressembler à ceci :
 

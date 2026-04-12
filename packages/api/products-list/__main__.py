@@ -44,11 +44,9 @@ def main(event):
     in_stock = event.get("in_stock")
 
     if category:
-        # Recherche case-insensitive partielle : "elect" → "Electronics"
         query["category"] = {"$regex": category, "$options": "i"}
 
     if in_stock is not None:
-        # Les query params arrivent comme des strings depuis l'URL
         if isinstance(in_stock, str):
             in_stock = in_stock.lower() == "true"
         query["in_stock"] = in_stock
