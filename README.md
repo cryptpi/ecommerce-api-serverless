@@ -298,10 +298,27 @@ doctl serverless namespaces create --label ecommerce-serverless --region fra1
 ---
 
 ## 2.6 — Se connecter au namespace
+```bash
+octl serverless key create --name ecommerce-dev --expiration 30d
+
+```
+Notice: The secret key for "ecommerce-dev" is shown below.
+Please save this secret. You will not be able to see it again.
+
+ID                                         Name             Secret                                                              Created At                 Expires At
+dof_v1_845fd417-09fb-4d70-8359-d5b3717f    ecommerce-dev    lW9SDyMQnZ4FN6BxIkWYKHsrYJ738B6din3H3VvO9KOBOmiVqurTWMiiQcNsOEyF    2026-04-14 14:10:42 UTC    2026-05-14 14:10:42 UTC
+
 
 ```bash
 # Connecter doctl à votre namespace
-doctl serverless connect
+doctl serverless connect #this is a depricated command
+
+# Correct command
+doctl serverless connect <namespace> --access-key <dof_v1_<access_key_id>:<secret>>
+
+# Example
+doctl serverless connect ecommerce-serverless --access-key dof_v1_845fd417-09fb-4d70-8359-d5b3717f:lW9SDyMQnZ4FN6BxIkWYKHsrYJ738B6din3H3VvO9KOBOmiVqurTWMiiQcNsOEyF
+
 ```
 
 ✅ **Résultat attendu :**
@@ -311,6 +328,8 @@ Connected to functions namespace 'ecommerce-serverless' on API host 'https://faa
 ```
 
 > 🔑 **Le API host** est l'URL de base pour toutes vos fonctions. Notez-la — vous en aurez besoin plus tard.
+
+https://faas-fra1-afec6ce7.doserverless.co
 
 ---
 
@@ -531,6 +550,10 @@ Ce fichier contient votre chaîne de connexion MongoDB Atlas — **la même** qu
 ```env
 MONGODB_URL=mongodb+srv://api_user:VOTRE_MOT_DE_PASSE@ecommerce-workshop.xxxxx.mongodb.net/ecommerce?retryWrites=true&w=majority
 ```
+Exemple:
+MONGODB_URL=mongodb+srv://api_user:12wail99@ecommerce-workshop.jm01dch.mongodb.net/?appName=ecommerce-workshop
+
+
 
 > ⚠️ **Ce fichier est dans `.gitignore` — il ne sera JAMAIS envoyé sur GitHub.** Lors du déploiement, `doctl` lit ce fichier et injecte les variables dans le cloud.
 
