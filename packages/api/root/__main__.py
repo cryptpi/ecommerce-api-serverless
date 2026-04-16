@@ -13,7 +13,7 @@ def main(event):
         "body": {
             "message":  "E-Commerce Products API (Serverless) is running",
             "docs":     "Use /api/products-list, /api/products-create, etc.",
-            "version":  "2.0.0",
+            "version":  "2.1.0",
             "runtime":  "DigitalOcean Functions"
         }
     }

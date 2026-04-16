@@ -1307,9 +1307,9 @@ doctl serverless functions invoke api/root
 
 | Déploiement | URL | Modèle | Commande |
 |-------------|-----|--------|----------|
-| TP1 — Droplet | `http://DROPLET_IP:8000` | IaaS | SSH + git pull + systemctl |
-| TP1 — App Platform | `https://xxx.ondigitalocean.app` | PaaS | git push (auto) |
-| **TP2 — DO Functions** | `https://faas-fra1-XXXXX.../api/...` | **FaaS** | `doctl serverless deploy .` |
+| TP1 — Droplet | `http://178.62.111.202:8000` | IaaS | SSH + git pull + systemctl |
+| TP1 — App Platform | `https://commerce-api-p5w9o.ondigitalocean.app/` | PaaS | git push (auto) |
+| **TP2 — DO Functions** | `https://faas-fra1-afec6ce7.doserverless.co/api/v1/web/fn-95c10c6e-27fb-4368-8997-30d92fac5440` | **FaaS** | `doctl serverless deploy .` |
 
 > 🔑 **Exercice :** Créez un produit via DO Functions. Vérifiez qu'il apparaît sur le TP1. La base de données est partagée !
 
@@ -1344,7 +1344,12 @@ COLD START (~650ms)                    WARM (~50ms)
 curl -o /dev/null -s -w "\n⏱️  Total: %{time_total}s\n    DNS: %{time_namelookup}s\n    Connect: %{time_connect}s\n    TTFB: %{time_starttransfer}s\n" \
   $BASE_URL/api/products-list
 ```
-
+```
+⏱️  Total: 2.434360s
+    DNS: 0.058945s
+    Connect: 0.078041s
+    TTFB: 2.434188s
+```
 ### Requêtes consécutives
 
 ```bash
@@ -1362,6 +1367,18 @@ Requête 3 :  Total: 0.170s | TTFB: 0.140s    ← 🔥 Warm
 Requête 4 :  Total: 0.165s | TTFB: 0.135s    ← 🔥 Warm
 Requête 5 :  Total: 0.160s | TTFB: 0.130s    ← 🔥 Warm
 ```
+```
+Requête 1 :
+  Total: 0.332776s | TTFB: 0.332535s
+Requête 2 :
+  Total: 0.392636s | TTFB: 0.392444s
+Requête 3 :
+  Total: 0.180525s | TTFB: 0.180304s
+Requête 4 :
+  Total: 0.138606s | TTFB: 0.138352s
+Requête 5 :
+  Total: 0.149273s | TTFB: 0.149022s
+```
 
 > 🔑 La première requête est **4 à 5 fois plus lente**.
 
@@ -1371,13 +1388,16 @@ Requête 5 :  Total: 0.160s | TTFB: 0.130s    ← 🔥 Warm
 
 ```bash
 # IaaS (Droplet)
-curl -o /dev/null -s -w "IaaS:      TTFB: %{time_starttransfer}s\n" http://DROPLET_IP:8000/products
+curl -o /dev/null -s -w "IaaS:      TTFB: %{time_starttransfer}s\n" http://178.62.111.202:8000/products
+#IaaS:      TTFB: 0.113632s
 
 # PaaS (App Platform)
-curl -o /dev/null -s -w "PaaS:      TTFB: %{time_starttransfer}s\n" https://xxx.ondigitalocean.app/products
+curl -o /dev/null -s -w "PaaS:      TTFB: %{time_starttransfer}s\n" https://commerce-api-p5w9o.ondigitalocean.app/products
+#PaaS:      TTFB: 0.205165s
 
 # Serverless (DO Functions)
 curl -o /dev/null -s -w "Serverless: TTFB: %{time_starttransfer}s\n" $BASE_URL/api/products-list
+#Serverless: TTFB: 2.118177s
 ```
 
 ---
@@ -1386,8 +1406,8 @@ curl -o /dev/null -s -w "Serverless: TTFB: %{time_starttransfer}s\n" $BASE_URL/a
 
 | Métrique | IaaS (Droplet) | PaaS (App Platform) | Serverless (DO Functions) |
 |----------|:-:|:-:|:-:|
-| Cold start | N/A | N/A | _____ ms |
-| Warm request | _____ ms | _____ ms | _____ ms |
+| Cold start | N/A | N/A | 2.434360s ms |
+| Warm request | 0.113632s ms | 0.205165s ms | 0.149273s  ms |
 | Toujours disponible ? | ✅ | ✅ | ⚠️ Premier appel lent |
 | Coût au repos | ~6$/mois | ~5$/mois | 0$ |
 
@@ -1418,6 +1438,7 @@ doctl serverless activations logs --last
 > 💡 **Exercice :** Invoquez `api/products-list` puis observez les logs. Identifiez la durée et si c'était un cold start.
 
 ---
+04/15 10:53:27    success    nodejs:14     0.0.13     43a505567097490aa505567097290a76    warm     53      6ms         builder/getDownloadUrl
 ---
 
 # PARTIE E — ÉVÉNEMENTS
@@ -1465,6 +1486,7 @@ doctl serverless functions get api/webhook-stock-alert --url
 
 Notez cette URL — vous en aurez besoin dans Atlas.
 
+https://faas-fra1-afec6ce7.doserverless.co/api/v1/web/fn-95c10c6e-27fb-4368-8997-30d92fac5440/api/webhook-stock-alert
 ---
 
 ## 9.4 — Créer un Atlas Trigger
@@ -1499,7 +1521,7 @@ exports = async function(changeEvent) {
   }
   
   const response = await context.http.post({
-    url: "VOTRE_URL_WEBHOOK_ICI",
+    url: "https://faas-fra1-afec6ce7.doserverless.co/api/v1/web/fn-95c10c6e-27fb-4368-8997-30d92fac5440/api/webhook-stock-alert",
     headers: {
       "Content-Type": ["application/json"]
     },
@@ -1530,7 +1552,7 @@ BASE_URL=$(doctl serverless functions get api/root --url | sed 's|/api/root||')
 curl $BASE_URL/api/products-list | python3 -m json.tool
 
 # Mettez son stock à 0
-curl -X PUT "$BASE_URL/api/products-update?id=PRODUCT_ID" \
+curl -X PUT "$BASE_URL/api/products-update?id=69dbb7f5641ba16d3603f266" \
   -H "Content-Type: application/json" \
   -d '{"stock_count": 0, "in_stock": false}'
 ```
