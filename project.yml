@@ -9,6 +9,7 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 packages:
+
   - name: api
     # ── Variables d'environnement ─────────────────────────────────────────
     # ${MONGODB_URL} est lu depuis le fichier .env au moment du déploiement.
